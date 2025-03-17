@@ -1,0 +1,6 @@
+@ResumeScoringAPI_HostAddress = http://localhost:5267
+
+GET {{ResumeScoringAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
