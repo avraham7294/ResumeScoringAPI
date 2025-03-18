@@ -43,7 +43,7 @@ namespace ResumeScoringAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("JobDescriptions");
+                    b.ToTable("JobDescriptions", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.Resume", b =>
@@ -71,7 +71,7 @@ namespace ResumeScoringAPI.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Resumes");
+                    b.ToTable("Resumes", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.ResumeScore", b =>
@@ -100,7 +100,7 @@ namespace ResumeScoringAPI.Migrations
 
                     b.HasIndex("ResumeId");
 
-                    b.ToTable("ResumeScores");
+                    b.ToTable("ResumeScores", (string)null);
                 });
 
             modelBuilder.Entity("Domain.Entities.ResumeScore", b =>
