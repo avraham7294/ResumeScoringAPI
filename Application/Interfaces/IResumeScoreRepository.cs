@@ -1,5 +1,5 @@
 ﻿using Domain.Entities;
-
+// # Resume Score Repository Interface
 namespace Application.Interfaces
 {
     public interface IResumeScoreRepository : IRepository<ResumeScore>

@@ -1,4 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+// # API Controllers (To be added in later steps)
+// # ResumeController.cs JobDescriptionController.cs ResumeScoreController.cs
+// # API & GraphQL controllers later
 
 namespace API.Controllers
 {

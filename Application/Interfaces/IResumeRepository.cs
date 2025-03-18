@@ -1,4 +1,5 @@
 ﻿using Domain.Entities;
+//   # Resume-specific Repository Interface
 
 namespace Application.Interfaces
 {

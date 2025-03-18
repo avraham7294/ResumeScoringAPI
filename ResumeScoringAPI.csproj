@@ -24,14 +24,11 @@
 
   <ItemGroup>
     <Folder Include="API\GraphQL setup\" />
-    <Folder Include="Application\Business logic\" />
     <Folder Include="Application\Services\" />
     <Folder Include="Domain\Entities\" />
     <Folder Include="Domain\Models\" />
-    <Folder Include="Infrastructure\EF Core\" />
-    <Folder Include="Infrastructure\External services\" />
-    <Folder Include="Persistence\Migrations\" />
-    <Folder Include="Tests\Unit &amp; Integration tests\" />
+    <Folder Include="Tests\UnitTests\" />
+    <Folder Include="Tests\IntegrationTests\" />
   </ItemGroup>
 
 </Project>

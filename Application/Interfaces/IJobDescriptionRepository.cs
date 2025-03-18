@@ -1,4 +1,6 @@
 ﻿using Domain.Entities;
+//   # Job Description Repository Interface
+
 
 namespace Application.Interfaces
 {
