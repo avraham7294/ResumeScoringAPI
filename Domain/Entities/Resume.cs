@@ -7,5 +7,7 @@
         public string Email { get; set; } = string.Empty;
         public string FileUrl { get; set; } = string.Empty; // Cloud Storage URL
         public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
+        public ICollection<ResumeScore>? ResumeScores { get; set; }
+
     }
 }

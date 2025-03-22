@@ -1,18 +1,57 @@
-﻿using Microsoft.AspNetCore.Mvc;
-// # API Controllers (To be added in later steps)
-// # ResumeController.cs JobDescriptionController.cs ResumeScoreController.cs
-// # API & GraphQL controllers later
+﻿using AIResumeScoringAPI.Infrastructure.Services;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
-namespace API.Controllers
+
+namespace AIResumeScoringAPI.API.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/resumes")]
     public class ResumeController : ControllerBase
     {
-        [HttpGet]
-        public IActionResult Get()
+        private readonly BlobStorageService _blobStorageService;
+
+        public ResumeController(BlobStorageService blobStorageService)
         {
-            return Ok("Resume Scoring API is running...");
+            _blobStorageService = blobStorageService;
+        }
+
+        [HttpPost("upload")]
+        public async Task<IActionResult> UploadResume(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("Invalid file.");
+
+            var fileName = $"{Guid.NewGuid()}_{file.FileName}";
+
+            using (var stream = file.OpenReadStream())
+            {
+                var fileUrl = await _blobStorageService.UploadFileAsync(stream, fileName);
+                return Ok(new { FileUrl = fileUrl });
+            }
+        }
+
+        [HttpGet("download/{fileName}")]
+        public async Task<IActionResult> DownloadResume(string fileName)
+        {
+            var fileStream = await _blobStorageService.DownloadFileAsync(fileName);
+            if (fileStream == null)
+                return NotFound("File not found.");
+
+            return File(fileStream, "application/pdf", fileName);
+        }
+
+        [HttpDelete("delete/{fileName}")]
+        public async Task<IActionResult> DeleteResume(string fileName)
+        {
+            var isDeleted = await _blobStorageService.DeleteFileAsync(fileName);
+            if (!isDeleted)
+                return NotFound("File not found.");
+
+            return Ok(new { Message = "File deleted successfully." });
         }
     }
 }
