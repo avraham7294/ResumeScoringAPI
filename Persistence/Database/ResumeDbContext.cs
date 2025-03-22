@@ -13,16 +13,15 @@ namespace Persistence.Database
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Configure Relationships
             modelBuilder.Entity<ResumeScore>()
                 .HasOne(rs => rs.Resume)
-                .WithMany()
+                .WithMany(r => r.ResumeScores) // Make sure Resume has this navigation property
                 .HasForeignKey(rs => rs.ResumeId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<ResumeScore>()
                 .HasOne(rs => rs.JobDescription)
-                .WithMany()
+                .WithMany(j => j.ResumeScores) // Make sure JobDescription has this too
                 .HasForeignKey(rs => rs.JobDescriptionId)
                 .OnDelete(DeleteBehavior.Cascade);
         }

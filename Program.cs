@@ -18,6 +18,8 @@ builder.Services.AddScoped<IResumeRepository, ResumeRepository>();
 builder.Services.AddScoped<IJobDescriptionRepository, JobDescriptionRepository>();
 builder.Services.AddScoped<IResumeScoreRepository, ResumeScoreRepository>();
 
+builder.Services.AddScoped<ResumeScoringService>();
+
 // 🔹 Register Blob Storage Service
 builder.Services.AddSingleton<BlobStorageService>();
 

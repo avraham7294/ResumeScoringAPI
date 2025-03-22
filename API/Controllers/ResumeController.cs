@@ -53,5 +53,27 @@ namespace AIResumeScoringAPI.API.Controllers
 
             return Ok(new { Message = "File deleted successfully." });
         }
+
+        [HttpPost("{resumeId}/score/{jobId}")]
+        public async Task<IActionResult> ScoreResume(int resumeId, int jobId, [FromServices] ResumeScoringService scorer)
+        {
+            try
+            {
+                var result = await scorer.ScoreResumeAgainstJobAsync(resumeId, jobId);
+                return Ok(new
+                {
+                    ResumeId = resumeId,
+                    JobId = jobId,
+                    Score = result.Score,
+                    Reason = result.Reason
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
+
     }
 }
