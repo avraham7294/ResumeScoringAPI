@@ -1,42 +1,55 @@
 ﻿using Microsoft.OpenApi.Models;
 using Swashbuckle.AspNetCore.SwaggerGen;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace AIResumeScoringAPI.Infrastructure.Swagger
+public class FileUploadOperationFilter : IOperationFilter
 {
-    public class FileUploadOperationFilter : IOperationFilter
+    public void Apply(OpenApiOperation operation, OperationFilterContext context)
     {
-        public void Apply(OpenApiOperation operation, OperationFilterContext context)
+        var parameters = context.ApiDescription.ParameterDescriptions;
+
+        // We will manually construct the schema for multipart/form-data
+        var properties = new Dictionary<string, OpenApiSchema>();
+        var requiredProperties = new HashSet<string>();
+
+        foreach (var param in parameters)
         {
-            var fileParams = context.ApiDescription.ParameterDescriptions
-                .Where(p => p.Type == typeof(IFormFile) || p.Type == typeof(IEnumerable<IFormFile>))
-                .ToList();
-
-            if (!fileParams.Any()) return;
-
-            operation.RequestBody = new OpenApiRequestBody
+            if (param.Type == typeof(IFormFile))
             {
-                Content = new Dictionary<string, OpenApiMediaType>
+                properties[param.Name] = new OpenApiSchema
                 {
-                    ["multipart/form-data"] = new OpenApiMediaType
+                    Type = "string",
+                    Format = "binary"
+                };
+                requiredProperties.Add(param.Name);
+            }
+            else if (param.Source?.Id == "Form")
+            {
+                properties[param.Name] = new OpenApiSchema
+                {
+                    Type = "string"
+                };
+                requiredProperties.Add(param.Name);
+            }
+        }
+
+        if (properties.Count == 0)
+            return;
+
+        operation.RequestBody = new OpenApiRequestBody
+        {
+            Required = true,
+            Content = new Dictionary<string, OpenApiMediaType>
+            {
+                ["multipart/form-data"] = new OpenApiMediaType
+                {
+                    Schema = new OpenApiSchema
                     {
-                        Schema = new OpenApiSchema
-                        {
-                            Type = "object",
-                            Properties = fileParams.ToDictionary(
-                                p => p.Name,
-                                p => new OpenApiSchema
-                                {
-                                    Type = "string",
-                                    Format = "binary"
-                                }
-                            ),
-                            Required = fileParams.Select(p => p.Name).ToHashSet()
-                        }
+                        Type = "object",
+                        Properties = properties,
+                        Required = requiredProperties
                     }
                 }
-            };
-        }
+            }
+        };
     }
 }

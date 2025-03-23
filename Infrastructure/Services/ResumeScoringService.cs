@@ -8,7 +8,7 @@ using System.Text.Json;
 
 namespace AIResumeScoringAPI.Infrastructure.Services
 {
-    public class ResumeScoringService
+    public class ResumeScoringService : IResumeScoringService
     {
         private readonly IConfiguration _configuration;
         private readonly IResumeRepository _resumeRepo;

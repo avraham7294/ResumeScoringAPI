@@ -1,4 +1,6 @@
 ﻿using AIResumeScoringAPI.Infrastructure.Services;
+using Application.Interfaces;
+using Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -20,7 +22,11 @@ namespace AIResumeScoringAPI.API.Controllers
         }
 
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadResume(IFormFile file)
+        public async Task<IActionResult> UploadResume(
+    IFormFile file,
+    [FromForm] string candidateName,
+    [FromForm] string email,
+    [FromServices] IResumeRepository resumeRepository)
         {
             if (file == null || file.Length == 0)
                 return BadRequest("Invalid file.");
@@ -30,9 +36,27 @@ namespace AIResumeScoringAPI.API.Controllers
             using (var stream = file.OpenReadStream())
             {
                 var fileUrl = await _blobStorageService.UploadFileAsync(stream, fileName);
-                return Ok(new { FileUrl = fileUrl });
+
+                var resume = new Resume
+                {
+                    CandidateName = candidateName,
+                    Email = email,
+                    FileUrl = fileUrl,
+                    UploadedAt = DateTime.UtcNow
+                };
+
+                await resumeRepository.AddAsync(resume);
+                await resumeRepository.SaveChangesAsync();
+
+                return Ok(new
+                {
+                    Message = "Resume uploaded and saved successfully.",
+                    ResumeId = resume.Id,
+                    FileUrl = fileUrl
+                });
             }
         }
+
 
         [HttpGet("download/{fileName}")]
         public async Task<IActionResult> DownloadResume(string fileName)
@@ -55,7 +79,7 @@ namespace AIResumeScoringAPI.API.Controllers
         }
 
         [HttpPost("{resumeId}/score/{jobId}")]
-        public async Task<IActionResult> ScoreResume(int resumeId, int jobId, [FromServices] ResumeScoringService scorer)
+        public async Task<IActionResult> ScoreResume(int resumeId, int jobId, [FromServices] IResumeScoringService scorer)
         {
             try
             {
