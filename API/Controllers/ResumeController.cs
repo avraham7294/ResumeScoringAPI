@@ -1,6 +1,7 @@
 ﻿using AIResumeScoringAPI.Infrastructure.Services;
 using Application.Interfaces;
 using Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -21,6 +22,7 @@ namespace AIResumeScoringAPI.API.Controllers
             _blobStorageService = blobStorageService;
         }
 
+        [Authorize]
         [HttpPost("upload")]
         public async Task<IActionResult> UploadResume(
     IFormFile file,
@@ -57,7 +59,7 @@ namespace AIResumeScoringAPI.API.Controllers
             }
         }
 
-
+        [Authorize]
         [HttpGet("download/{fileName}")]
         public async Task<IActionResult> DownloadResume(string fileName)
         {
@@ -68,6 +70,7 @@ namespace AIResumeScoringAPI.API.Controllers
             return File(fileStream, "application/pdf", fileName);
         }
 
+        [Authorize]
         [HttpDelete("delete/{fileName}")]
         public async Task<IActionResult> DeleteResume(string fileName)
         {
@@ -78,6 +81,7 @@ namespace AIResumeScoringAPI.API.Controllers
             return Ok(new { Message = "File deleted successfully." });
         }
 
+        [Authorize]
         [HttpPost("{resumeId}/score/{jobId}")]
         public async Task<IActionResult> ScoreResume(int resumeId, int jobId, [FromServices] IResumeScoringService scorer)
         {

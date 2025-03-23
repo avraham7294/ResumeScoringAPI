@@ -10,6 +10,7 @@ namespace Persistence.Database
         public DbSet<Resume> Resumes { get; set; }
         public DbSet<JobDescription> JobDescriptions { get; set; }
         public DbSet<ResumeScore> ResumeScores { get; set; }
+        public DbSet<User> Users { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
