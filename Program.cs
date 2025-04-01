@@ -9,33 +9,46 @@ using Persistence.Database;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// 🔹 Load user secrets (for sensitive keys)
 builder.Configuration.AddUserSecrets<Program>();
 
-// 🔹 Add Database Context
+// ===================== Dependency Injection Setup =====================
+
+// 🔹 Add Database Context (SQL Server)
 builder.Services.AddDbContext<ResumeDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// 🔹 Register Repositories
+// 🔹 Register Repository Interfaces & Implementations
 builder.Services.AddScoped<IResumeRepository, ResumeRepository>();
 builder.Services.AddScoped<IJobDescriptionRepository, JobDescriptionRepository>();
 builder.Services.AddScoped<IResumeScoreRepository, ResumeScoreRepository>();
 
+// 🔹 Register Scoring Service
 builder.Services.AddScoped<IResumeScoringService, ResumeScoringService>();
 
-// 🔹 Register Blob Storage Service
+// 🔹 Register Blob Storage Service (Singleton - can be reused globally)
 builder.Services.AddSingleton<BlobStorageService>();
 
-// 🔹 Add Controllers & Swagger
+// 🔹 Register JWT Token Service (Singleton - stateless)
+builder.Services.AddSingleton<JwtTokenService>();
+
+// ===================== Swagger & API Docs =====================
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v1", new OpenApiInfo { Title = "AI Resume Scoring API", Version = "v1" });
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "AI Resume Scoring API",
+        Version = "v1",
+        Description = "API for scoring candidate resumes against job descriptions using AI."
+    });
 
-    // 🔹 Enable file upload for Swagger
+    // 🔹 Enable file upload in Swagger
     options.OperationFilter<FileUploadOperationFilter>();
 
-    // 🔹 Enable JWT Authorization (if needed)
+    // 🔹 Add JWT Bearer Authentication support in Swagger
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -43,7 +56,7 @@ builder.Services.AddSwaggerGen(options =>
         Scheme = "Bearer",
         BearerFormat = "JWT",
         In = ParameterLocation.Header,
-        Description = "Enter 'Bearer {token}'"
+        Description = "Enter 'Bearer {token}' to authorize"
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -62,6 +75,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+// ===================== JWT Authentication Setup =====================
 var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
 
 builder.Services.AddAuthentication(options =>
@@ -77,30 +91,29 @@ builder.Services.AddAuthentication(options =>
     {
         ValidateIssuer = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidateAudience = false,
+        ValidateAudience = false, // Not validating audience in this case
         ValidateLifetime = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuerSigningKey = true,
     };
 });
 
-// Register JWT Token service
-builder.Services.AddSingleton<JwtTokenService>();
-
-
-
+// ===================== Build & Run Application =====================
 var app = builder.Build();
 
+// 🔹 Enable Swagger UI in Development environment
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
+// 🔹 Middleware pipeline
 app.UseHttpsRedirection();
 
-app.UseAuthentication(); 
+app.UseAuthentication(); // Must be before Authorization
 app.UseAuthorization();
 
 app.MapControllers();
+
 app.Run();

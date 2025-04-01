@@ -1,28 +1,42 @@
-﻿// API\Controllers\AuthController.cs
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Application.DTOs;
 
-[ApiController]
-[Route("api/auth")]
-public class AuthController : ControllerBase
+namespace AIResumeScoringAPI.API.Controllers
 {
-    private readonly JwtTokenService _jwtTokenService;
-
-    public AuthController(JwtTokenService jwtTokenService)
+    /// <summary>
+    /// Controller responsible for user authentication and token generation.
+    /// </summary>
+    [ApiController]
+    [Route("api/auth")]
+    public class AuthController : ControllerBase
     {
-        _jwtTokenService = jwtTokenService;
-    }
+        private readonly JwtTokenService _jwtTokenService;
 
-    [HttpPost("login")]
-    public IActionResult Login([FromBody] UserLoginDto loginDto)
-    {
-        // Demo: Hardcoded user (in production, fetch from DB)
-        if (loginDto.Username == "admin" && loginDto.Password == "password")
+        /// <summary>
+        /// Initializes a new instance of the <see cref="AuthController"/> class.
+        /// </summary>
+        /// <param name="jwtTokenService">JWT token generation service.</param>
+        public AuthController(JwtTokenService jwtTokenService)
         {
-            var token = _jwtTokenService.GenerateToken(loginDto.Username, "Admin");
-            return Ok(new { Token = token });
+            _jwtTokenService = jwtTokenService;
         }
 
-        return Unauthorized("Invalid credentials");
+        /// <summary>
+        /// Authenticates the user and returns a JWT token if credentials are valid.
+        /// </summary>
+        /// <param name="loginDto">User login details (username and password).</param>
+        /// <returns>JWT token on success, Unauthorized on failure.</returns>
+        [HttpPost("login")]
+        public IActionResult Login([FromBody] UserLoginDto loginDto)
+        {
+            // ✅ In production, this should be replaced by proper user validation from a database.
+            if (loginDto.Username == "admin" && loginDto.Password == "password")
+            {
+                var token = _jwtTokenService.GenerateToken(loginDto.Username, "Admin");
+                return Ok(new { Token = token });
+            }
+
+            return Unauthorized("Invalid credentials");
+        }
     }
 }

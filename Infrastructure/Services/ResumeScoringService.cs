@@ -1,4 +1,5 @@
-﻿using Application.DTOs;
+﻿using AIResumeScoringAPI.Infrastructure.Utilities;
+using Application.DTOs;
 using Application.Interfaces;
 using Domain.Entities;
 using Microsoft.Extensions.Configuration;
@@ -8,6 +9,9 @@ using System.Text.Json;
 
 namespace AIResumeScoringAPI.Infrastructure.Services
 {
+    /// <summary>
+    /// Service responsible for scoring resumes against job descriptions using AI evaluation.
+    /// </summary>
     public class ResumeScoringService : IResumeScoringService
     {
         private readonly IConfiguration _configuration;
@@ -15,9 +19,11 @@ namespace AIResumeScoringAPI.Infrastructure.Services
         private readonly IJobDescriptionRepository _jobRepo;
         private readonly IResumeScoreRepository _scoreRepo;
         private readonly BlobStorageService _blobService;
-
         private readonly HttpClient _httpClient;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ResumeScoringService"/> class.
+        /// </summary>
         public ResumeScoringService(
             IConfiguration config,
             IResumeRepository resumeRepo,
@@ -33,24 +39,35 @@ namespace AIResumeScoringAPI.Infrastructure.Services
             _httpClient = new HttpClient();
         }
 
+        /// <summary>
+        /// Scores a resume against a specific job description.
+        /// </summary>
+        /// <param name="resumeId">The ID of the resume.</param>
+        /// <param name="jobId">The ID of the job description.</param>
+        /// <returns>A <see cref="ResumeScoreResult"/> containing the score and reason.</returns>
+        /// <exception cref="Exception">Thrown when resume, job, or AI evaluation fails.</exception>
         public async Task<ResumeScoreResult> ScoreResumeAgainstJobAsync(int resumeId, int jobId)
         {
+            // 🔸 Retrieve Resume and Job Description from database
             var resume = await _resumeRepo.GetByIdAsync(resumeId);
             var job = await _jobRepo.GetByIdAsync(jobId);
 
             if (resume == null || job == null)
                 throw new Exception("Resume or Job not found");
 
-            // Download and extract text
+            // 🔸 Download resume PDF file from Blob Storage
             var stream = await _blobService.DownloadFileAsync(Path.GetFileName(resume.FileUrl));
+            if (stream == null)
+                throw new Exception("Failed to download resume file from storage.");
 
             using var memoryStream = new MemoryStream();
-            await stream!.CopyToAsync(memoryStream);
-            memoryStream.Seek(0, SeekOrigin.Begin); // Reset position to start
+            await stream.CopyToAsync(memoryStream);
+            memoryStream.Seek(0, SeekOrigin.Begin); // Reset stream position
 
-            var resumeText = Infrastructure.Utilities.PdfParser.ExtractTextFromPdf(memoryStream);
+            // 🔸 Extract text content from PDF
+            var resumeText = PdfParser.ExtractTextFromPdf(memoryStream);
 
-
+            // 🔸 Prepare AI Prompt for evaluation
             var prompt = $$"""
             Act as an experienced HR evaluator.
 
@@ -70,9 +87,7 @@ namespace AIResumeScoringAPI.Infrastructure.Services
             {{resumeText}}
             """;
 
-
-
-
+            // 🔸 Prepare request to OpenAI API
             var request = new
             {
                 model = "gpt-4o-mini-2024-07-18",
@@ -86,6 +101,7 @@ namespace AIResumeScoringAPI.Infrastructure.Services
 
             var content = new StringContent(JsonSerializer.Serialize(request), Encoding.UTF8, "application/json");
 
+            // 🔸 Send request to OpenAI API
             var response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
             var responseJson = await response.Content.ReadAsStringAsync();
 
@@ -94,6 +110,7 @@ namespace AIResumeScoringAPI.Infrastructure.Services
                 throw new Exception($"OpenAI API Error: {response.StatusCode} - {responseJson}");
             }
 
+            // 🔸 Parse AI API Response
             using var doc = JsonDocument.Parse(responseJson);
             var contents = doc.RootElement
                 .GetProperty("choices")[0]
@@ -109,7 +126,7 @@ namespace AIResumeScoringAPI.Infrastructure.Services
                 double score = json.RootElement.GetProperty("score").GetDouble();
                 string reason = json.RootElement.GetProperty("reason").GetString();
 
-                // Store score
+                // 🔸 Save score to database
                 var resumeScore = new ResumeScore
                 {
                     ResumeId = resume.Id,
@@ -126,13 +143,11 @@ namespace AIResumeScoringAPI.Infrastructure.Services
                     Score = score,
                     Reason = reason
                 };
-
             }
             catch (Exception ex)
             {
                 throw new Exception($"Failed to parse AI response: {ex.Message}");
             }
-
         }
     }
 }
